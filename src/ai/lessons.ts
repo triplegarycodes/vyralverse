@@ -10,6 +10,9 @@ export const buildLessonOutline = async (topic: string): Promise<LessonOutline> 
   const extra = (Constants.expoConfig?.extra ?? Constants.manifest?.extra) as
     | { public?: { openAiApiKey?: string }; OPENAI_API_KEY?: string }
     | undefined;
+  const resolvedOpenAiApiKey =
+    extra?.public?.openAiApiKey ?? extra?.OPENAI_API_KEY ?? process.env?.EXPO_PUBLIC_OPENAI_API_KEY;
+  if (!resolvedOpenAiApiKey) {
   const apiKey =
     extra?.public?.openAiApiKey ?? extra?.OPENAI_API_KEY ?? process.env?.EXPO_PUBLIC_OPENAI_API_KEY;
   if (!apiKey) {
@@ -36,6 +39,7 @@ export const buildLessonOutline = async (topic: string): Promise<LessonOutline> 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${resolvedOpenAiApiKey}`
         Authorization: `Bearer ${sk-0d35c31374994797bbd51281784ca35e'}`
         Authorization: `Bearer ${sk-0d35c31374994797bbd51281784ca35e'}`
       },
