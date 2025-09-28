@@ -2,6 +2,9 @@
 require('dotenv/config');
 
 module.exports = {
+import 'dotenv/config';
+
+export default {
   expo: {
     name: 'Vyral Verse',
     slug: 'vyral-verse',
@@ -26,8 +29,12 @@ module.exports = {
     },
     extra: {
       public: {
-        openAiApiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? ''
+        openAiApiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? 'sk-0d35c31374994797bbd51281784ca35e'
       }
+
+        openAiApiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? 'sk-0d35c31374994797bbd51281784ca35e'
+      }
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? 'sk-0d35c31374994797bbd51281784ca35e'
     }
   }
 };
