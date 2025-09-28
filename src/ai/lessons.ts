@@ -13,6 +13,16 @@ export const buildLessonOutline = async (topic: string): Promise<LessonOutline> 
   const resolvedOpenAiApiKey =
     extra?.public?.openAiApiKey ?? extra?.OPENAI_API_KEY ?? process.env?.EXPO_PUBLIC_OPENAI_API_KEY;
   if (!resolvedOpenAiApiKey) {
+  const apiKey =
+    extra?.public?.openAiApiKey ?? extra?.OPENAI_API_KEY ?? process.env?.EXPO_PUBLIC_OPENAI_API_KEY;
+  if (!apiKey) {
+  const extra = (Constants.expoConfig?.extra ?? Constants.manifest?.extra) as
+    | { public?: { openAiApiKey?: string }; OPENAI_API_KEY?: string }
+    | undefined;
+  const key =
+    extra?.public?.openAiApiKey ?? extra?.OPENAI_API_KEY ?? process.env?.EXPO_PUBLIC_OPENAI_API_KEY;
+  const key = Constants.expoConfig?.extra?.OPENAI_API_KEY;
+  if (!key) {
     // Offline fallback blueprint keeps onboarding smooth during development
     return {
       topic,
@@ -30,6 +40,8 @@ export const buildLessonOutline = async (topic: string): Promise<LessonOutline> 
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${resolvedOpenAiApiKey}`
+        Authorization: `Bearer ${sk-0d35c31374994797bbd51281784ca35e'}`
+        Authorization: `Bearer ${sk-0d35c31374994797bbd51281784ca35e'}`
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
