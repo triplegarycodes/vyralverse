@@ -6,12 +6,12 @@ export type LessonOutline = {
   bullets: string[];
 };
 
-export const buildLessonOutline = async (topic: string): Promise<LessonOutline> => {
   const extra = (Constants.expoConfig?.extra ?? Constants.manifest?.extra) as
     | { public?: { openAiApiKey?: string }; OPENAI_API_KEY?: string }
     | undefined;
   const key =
     extra?.public?.openAiApiKey ?? extra?.OPENAI_API_KEY ?? process.env?.EXPO_PUBLIC_OPENAI_API_KEY;
+  const key = Constants.expoConfig?.extra?.OPENAI_API_KEY;
   if (!key) {
     // Offline fallback blueprint keeps onboarding smooth during development
     return {
