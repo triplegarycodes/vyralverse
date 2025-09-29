@@ -1,71 +1,120 @@
-// Step 7: Neon button with gradient fill and subtle interactions
-import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNeonTheme } from '../theme/ThemeProvider';
+import React, { PropsWithChildren, useCallback } from 'react';
+import { Platform, StyleProp, StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native';
+import type { HapticFeedbackTypes } from 'react-native-haptic-feedback';
+import { EMBER_ORANGE, RADIANT_GOLD, VersePalette } from '../theme';
 
-export type NeonButtonProps = {
-  label: string;
-  onPress?: () => void;
-  icon?: React.ReactNode;
+const intensityMap: Record<'light' | 'medium' | 'heavy', HapticFeedbackTypes> = {
+  light: 'impactLight',
+  medium: 'impactMedium',
+  heavy: 'impactHeavy',
 };
 
-export const NeonButton: React.FC<NeonButtonProps> = ({ label, onPress, icon }) => {
-  const {
-    theme: { colors, radii, spacing }
-  } = useNeonTheme();
-  const scale = useSharedValue(1);
+type HapticTrigger = (type: HapticFeedbackTypes, options: HapticOptions) => void;
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }]
-  }));
+type HapticOptions = {
+  enableVibrateFallback?: boolean;
+  ignoreAndroidSystemSettings?: boolean;
+};
+
+let cachedTrigger: HapticTrigger | null = null;
+
+const getTrigger = (): HapticTrigger | null => {
+  if (Platform.OS === 'web') {
+    return null;
+  }
+
+  if (cachedTrigger) {
+    return cachedTrigger;
+  }
+
+  try {
+    const module: typeof import('react-native-haptic-feedback') = require('react-native-haptic-feedback');
+    const haptics = module.default ?? module;
+
+    if (typeof haptics?.trigger === 'function') {
+      cachedTrigger = (type: HapticFeedbackTypes, options: HapticOptions) => {
+        haptics.trigger(type, options);
+      };
+      return cachedTrigger;
+    }
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Haptics unavailable:', error);
+    }
+  }
+
+  return null;
+};
+
+type NeonButtonProps = PropsWithChildren<{
+  title: string;
+  onPress: () => void;
+  palette?: VersePalette;
+  intensity?: 'light' | 'medium' | 'heavy';
+  style?: StyleProp<ViewStyle>;
+}>;
+
+export const NeonButton: React.FC<NeonButtonProps> = ({
+  title,
+  onPress,
+  palette,
+  children,
+  intensity = 'light',
+  style,
+}) => {
+  const handlePress = useCallback(() => {
+    const trigger = getTrigger();
+
+    trigger?.(intensityMap[intensity], {
+      enableVibrateFallback: true,
+      ignoreAndroidSystemSettings: false,
+    });
+
+    onPress();
+  }, [intensity, onPress]);
+
+  const buttonPalette = palette ?? {
+    primary: EMBER_ORANGE,
+    accent: RADIANT_GOLD,
+    background: '#000',
+    card: '#222',
+    text: RADIANT_GOLD,
+    outline: RADIANT_GOLD,
+  };
 
   return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={() => {
-        scale.value = withSpring(0.96, { damping: 12, stiffness: 120 });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, { damping: 12, stiffness: 120 });
-      }}
-      style={styles.pressable}
+    <TouchableOpacity
+      onPress={handlePress}
+      style={[
+        styles.button,
+        {
+          backgroundColor: buttonPalette.primary,
+          shadowColor: buttonPalette.accent,
+        },
+        style,
+      ]}
     >
-      <Animated.View style={[styles.wrapper, animatedStyle]}> 
-        <LinearGradient
-          colors={[colors.accent, colors.accentSecondary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            borderRadius: radii.lg,
-            paddingVertical: spacing.sm,
-            paddingHorizontal: spacing.lg,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          {icon}
-          <Text style={[styles.label, { color: '#04010F' }]}>{label}</Text>
-        </LinearGradient>
-      </Animated.View>
-    </Pressable>
+      <Text style={[styles.text, { color: buttonPalette.text }]}>{title}</Text>
+      {children}
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  pressable: {
-    width: '100%'
+  button: {
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginVertical: 8,
+    shadowOpacity: 0.9,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 8,
   },
-  wrapper: {
-    width: '100%'
-  },
-  label: {
+  text: {
+    fontFamily: 'OpenSans_400Regular',
     fontSize: 16,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginLeft: 8
-  }
+    textAlign: 'center',
+    letterSpacing: 1.2,
+  },
 });
