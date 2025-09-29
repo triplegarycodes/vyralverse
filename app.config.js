@@ -1,10 +1,9 @@
-// Step 8: .env & Config wiring for Vyral Verse
 require('dotenv/config');
 
-module.exports = {
-import 'dotenv/config';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? '';
+const PUBLIC_OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '';
 
-export default {
+module.exports = {
   expo: {
     name: 'Vyral Verse',
     slug: 'vyral-verse',
@@ -13,26 +12,24 @@ export default {
     orientation: 'portrait',
     userInterfaceStyle: 'dark',
     splash: {
-      // Placeholder splash configuration until vector assets are added
       resizeMode: 'contain',
-      backgroundColor: '#02010A'
+      backgroundColor: '#02010A',
     },
     assetBundlePatterns: ['**/*'],
     ios: {
-      supportsTablet: true
+      supportsTablet: true,
     },
     android: {
-      package: 'com.vyralverse.app'
+      package: 'com.vyralverse.app',
     },
     web: {
-      bundler: 'metro'
+      bundler: 'metro',
     },
     extra: {
+      openAiApiKey: OPENAI_API_KEY,
       public: {
-
-        openAiApiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? 'sk-0d35c31374994797bbd51281784ca35e'
-      }
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? 'sk-0d35c31374994797bbd51281784ca35e'
-    }
-  }
+        openAiApiKey: PUBLIC_OPENAI_API_KEY,
+      },
+    },
+  },
 };
