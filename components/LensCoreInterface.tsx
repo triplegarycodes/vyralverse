@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Camera, Scan, Zap, AlertCircle } from 'lucide-react';
+import { Camera, Scan, Zap, AlertCircle } from 'lucide-react-native';
 import { EnvironmentScan, Quest } from '@core/types';
 
 interface LensCoreInterfaceProps {

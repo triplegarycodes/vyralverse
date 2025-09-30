@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useMemo, useState } from 'react';
-import { Sparkles, Target, Zap, Radio, Compass } from 'lucide-react';
+import { Sparkles, Target, Zap, Radio, Compass } from 'lucide-react-native';
 import './styles/neon.css';
 import { VyraSkillTree } from './components/VyraSkillTree';
 import { LensCoreInterface } from './components/LensCoreInterface';
