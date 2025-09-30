@@ -1,5 +1,4 @@
 // Step 1: Flat ESLint configuration bridging TS + React Native
-const js = require('@eslint/js');
 const tsPlugin = require('@typescript-eslint/eslint-plugin');
 const tsParser = require('@typescript-eslint/parser');
 const reactPlugin = require('eslint-plugin-react');
@@ -30,7 +29,6 @@ module.exports = [
       }
     },
     rules: {
-      ...js.configs.recommended.rules,
       ...tsPlugin.configs.recommended.rules,
       ...reactPlugin.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
