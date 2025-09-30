@@ -1,3 +1,5 @@
+import React, { useRef, useEffect, useState } from 'react';
+import { Camera, Scan, Zap, AlertCircle } from 'lucide-react-native';
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { CameraView, CameraViewRef, useCameraPermissions } from 'expo-camera';
 import { Camera as CameraIcon, Scan, Zap, AlertCircle } from 'lucide-react';

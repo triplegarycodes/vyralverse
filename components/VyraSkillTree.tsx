@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, Lock, Star, Zap } from 'lucide-react';
+import { ChevronRight, Lock, Star, Zap } from 'lucide-react-native';
 
 interface SkillNode {
   id: string;
