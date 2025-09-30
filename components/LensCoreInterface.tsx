@@ -1,47 +1,39 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Camera, Scan, Zap, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  useWindowDimensions,
+} from 'react-native';
+import { Camera as CameraIcon, Scan, Zap, AlertCircle } from 'lucide-react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { EnvironmentScan, Quest } from '@core/types';
+import { colors, withOpacity } from '../styles/neon';
 
 interface LensCoreInterfaceProps {
   onQuestGenerated: (quest: Quest) => void;
 }
 
 export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGenerated }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [permission, requestPermission] = useCameraPermissions();
+  const hasCameraAccess = Boolean(permission?.granted);
   const [isScanning, setIsScanning] = useState(false);
-  const [hasCameraAccess, setHasCameraAccess] = useState(false);
   const [scanResult, setScanResult] = useState<EnvironmentScan | null>(null);
   const [generatedQuests, setGeneratedQuests] = useState<Quest[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { width } = useWindowDimensions();
+  const isLargeScreen = width >= 1024;
 
   useEffect(() => {
-    const initCamera = async () => {
-      try {
-        if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-          throw new Error('Camera access not supported in this environment.');
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-        });
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setHasCameraAccess(true);
-        }
-      } catch (err) {
+    if (!permission) {
+      requestPermission().catch(() => {
         setError('Camera access denied. Please enable camera permissions.');
-        console.error('Camera error:', err);
-      }
-    };
-
-    initCamera();
-
-    return () => {
-      const tracks = (videoRef.current?.srcObject as MediaStream | null)?.getTracks?.();
-      tracks?.forEach((track) => track.stop());
-    };
-  }, []);
+      });
+    }
+  }, [permission, requestPermission]);
 
   const simulateObjectDetection = (): EnvironmentScan => {
     const objects = [
@@ -64,31 +56,6 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
         stressIndicators: 0.3,
       },
     };
-  };
-
-  const handleScan = async () => {
-    if (!hasCameraAccess) {
-      setError('No camera access. Please enable permissions and try again.');
-      return;
-    }
-
-    setIsScanning(true);
-    setError(null);
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const result = simulateObjectDetection();
-      setScanResult(result);
-
-      const quests = generateQuestsFromEnvironment(result);
-      setGeneratedQuests(quests);
-    } catch (err) {
-      setError('Scan failed. Please try again.');
-      console.error(err);
-    } finally {
-      setIsScanning(false);
-    }
   };
 
   const generateQuestsFromEnvironment = (scan: EnvironmentScan): Quest[] => {
@@ -162,213 +129,560 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
     return quests;
   };
 
+  const handleScan = async () => {
+    if (!hasCameraAccess) {
+      const status = await requestPermission();
+      if (!status?.granted) {
+        setError('No camera access. Please enable permissions and try again.');
+        return;
+      }
+    }
+
+    setIsScanning(true);
+    setError(null);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const result = simulateObjectDetection();
+      setScanResult(result);
+
+      const quests = generateQuestsFromEnvironment(result);
+      setGeneratedQuests(quests);
+    } catch (err) {
+      setError('Scan failed. Please try again.');
+      console.error(err);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const acceptQuest = (quest: Quest) => {
     onQuestGenerated(quest);
     setGeneratedQuests((prev) => prev.filter((q) => q.id !== quest.id));
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center space-x-3 mb-6">
-        <Camera className="text-verse-cyan" size={32} />
-        <div>
-          <h1 className="text-3xl font-bold text-verse-cyan">FLWX Lens Core</h1>
-          <p className="text-verse-cyan/70">AI-Powered Environment Scanner</p>
-        </div>
-      </div>
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <CameraIcon size={32} color={colors.verseCyan} style={styles.inlineIcon} />
+          <View>
+            <Text style={styles.headerTitle}>FLWX Lens Core</Text>
+            <Text style={styles.headerSubtitle}>AI-Powered Environment Scanner</Text>
+          </View>
+        </View>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Left Column - Camera & Controls */}
-        <div className="space-y-6">
-          <div className="bg-gray-900/50 border border-verse-cyan/20 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-verse-cyan mb-4">Environment Scanner</h2>
+        <View style={[styles.gridRow, isLargeScreen && styles.gridRowWide]}>
+          <View style={[styles.leftColumn, isLargeScreen && styles.leftColumnWide]}>
+            <View style={styles.panel}>
+              <Text style={styles.panelTitle}>Environment Scanner</Text>
 
-            <div className="relative bg-black rounded-lg overflow-hidden border-2 border-verse-cyan/30">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-64 object-cover"
-              />
-              {isScanning && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-verse-cyan mx-auto mb-4"></div>
-                    <p className="text-verse-cyan font-bold">Analyzing Environment...</p>
-                  </div>
-                </div>
+              <View style={styles.cameraWrapper}>
+                {hasCameraAccess ? (
+                  <CameraView style={styles.cameraPreview} facing="back" />
+                ) : (
+                  <View style={styles.cameraPlaceholder}>
+                    <AlertCircle size={32} color={colors.verseOrange} style={styles.inlineIcon} />
+                    <Text style={styles.placeholderText}>Camera access required</Text>
+                    <Pressable style={styles.permissionButton} onPress={() => requestPermission()}>
+                      <Text style={styles.permissionButtonText}>Grant Permission</Text>
+                    </Pressable>
+                  </View>
+                )}
+
+                {isScanning && (
+                  <View style={styles.cameraOverlay}>
+                    <ActivityIndicator size="large" color={colors.verseCyan} />
+                    <Text style={styles.overlayText}>Analyzing Environment...</Text>
+                  </View>
+                )}
+              </View>
+
+              <Pressable
+                onPress={handleScan}
+                disabled={isScanning}
+                style={[styles.scanButton, isScanning && styles.scanButtonDisabled]}
+              >
+                <Scan size={20} color={colors.verseBlack} style={styles.inlineIcon} />
+                <Text style={styles.scanButtonText}>{isScanning ? 'Scanning...' : 'Scan Environment'}</Text>
+              </Pressable>
+
+              {error && (
+                <View style={styles.errorBanner}>
+                  <AlertCircle size={20} color={withOpacity('#ff4d67', 0.9)} style={styles.inlineIcon} />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
               )}
+            </View>
 
-              {!hasCameraAccess && !error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <div className="text-center">
-                    <AlertCircle className="text-verse-orange mx-auto mb-2" size={32} />
-                    <p className="text-verse-orange">Camera access required</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            {scanResult && (
+              <View style={styles.analysisPanel}>
+                <Text style={styles.analysisTitle}>Environment Analysis</Text>
 
-            <button
-              onClick={handleScan}
-              disabled={isScanning || !hasCameraAccess}
-              className="w-full mt-4 bg-verse-cyan text-verse-black py-3 rounded-lg font-bold hover:bg-verse-cyan/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
-            >
-              <Scan size={20} />
-              <span>{isScanning ? 'Scanning...' : 'Scan Environment'}</span>
-            </button>
+                <View style={styles.analysisGrid}>
+                  <View style={styles.analysisColumn}>
+                    <View style={styles.analysisItem}>
+                      <Text style={styles.analysisLabel}>Activity</Text>
+                      <Text style={styles.analysisValue}>{scanResult.activity}</Text>
+                    </View>
+                    <View style={styles.analysisItem}>
+                      <Text style={styles.analysisLabel}>Mood</Text>
+                      <Text style={styles.analysisValue}>{scanResult.mood}</Text>
+                    </View>
+                    <View style={styles.analysisItem}>
+                      <Text style={styles.analysisLabel}>Focus Level</Text>
+                      <Text style={styles.analysisValue}>{(scanResult.userState.focusLevel * 100).toFixed(0)}%</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.analysisColumn, styles.analysisColumnRight]}>
+                    <View style={styles.analysisItem}>
+                      <Text style={styles.analysisLabel}>Location</Text>
+                      <Text style={styles.analysisValue}>{scanResult.location}</Text>
+                    </View>
+                    <View style={styles.analysisItem}>
+                      <Text style={styles.analysisLabel}>People</Text>
+                      <Text style={styles.analysisValue}>{scanResult.people}</Text>
+                    </View>
+                    <View style={styles.analysisItem}>
+                      <Text style={styles.analysisLabel}>Energy</Text>
+                      <Text style={styles.analysisValue}>{(scanResult.userState.energyEstimate * 100).toFixed(0)}%</Text>
+                    </View>
+                  </View>
+                </View>
 
-            {error && (
-              <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <div className="flex items-center space-x-2 text-red-400">
-                  <AlertCircle size={20} />
-                  <span>{error}</span>
-                </div>
-              </div>
+                <View style={styles.objectTagsSection}>
+                  <Text style={styles.objectTagsTitle}>Detected Objects</Text>
+                  <View style={styles.objectTagRow}>
+                    {scanResult.objects.map((obj, index) => (
+                      <View key={index} style={styles.objectTag}>
+                        <Text style={styles.objectTagText}>
+                          {obj.label} ({(obj.confidence * 100).toFixed(0)}%)
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
             )}
-          </div>
+          </View>
 
-          {/* Scan Results */}
-          {scanResult && (
-            <div className="bg-gray-900/50 border border-verse-purple/20 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-verse-purple mb-4">Environment Analysis</h3>
+          <View style={styles.rightColumn}>
+            <View style={styles.generatedHeader}>
+              <Zap size={24} color={colors.verseOrange} style={styles.inlineIcon} />
+              <Text style={styles.generatedTitle}>Generated Quests</Text>
+            </View>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm text-gray-400">Activity</label>
-                    <div className="text-verse-cyan font-medium capitalize">{scanResult.activity}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">Mood</label>
-                    <div className="text-verse-cyan font-medium capitalize">{scanResult.mood}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">Focus Level</label>
-                    <div className="text-verse-cyan font-medium">
-                      {(scanResult.userState.focusLevel * 100).toFixed(0)}%
-                    </div>
-                  </div>
-                </div>
+            {generatedQuests.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Zap size={48} color={withOpacity(colors.verseOrange, 0.5)} />
+                <Text style={styles.emptyStateTitle}>No Quests Yet</Text>
+                <Text style={styles.emptyStateSubtitle}>Scan your environment to generate personalized quests!</Text>
+                <Text style={styles.emptyStateHint}>The AI will analyze what it sees and create perfect challenges.</Text>
+              </View>
+            ) : (
+              generatedQuests.map((quest) => (
+                <View key={quest.id} style={styles.questCard}>
+                  <View style={styles.questHeader}>
+                    <View style={styles.questInfo}>
+                      <Text style={styles.questTitle}>{quest.title}</Text>
+                      <Text style={styles.questDescription}>{quest.description}</Text>
+                    </View>
+                    <View style={styles.questMeta}>
+                      {quest.timeLimit && <Text style={styles.questTime}>{quest.timeLimit}min</Text>}
+                      <Text style={styles.questReward}>+{quest.rewards.find((r) => r.type === 'xp')?.value} XP</Text>
+                    </View>
+                  </View>
 
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm text-gray-400">Location</label>
-                    <div className="text-verse-cyan font-medium capitalize">{scanResult.location}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">People</label>
-                    <div className="text-verse-cyan font-medium">{scanResult.people}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">Energy</label>
-                    <div className="text-verse-cyan font-medium">
-                      {(scanResult.userState.energyEstimate * 100).toFixed(0)}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <h4 className="font-bold text-verse-green mb-3">Detected Objects</h4>
-                <div className="flex flex-wrap gap-2">
-                  {scanResult.objects.map((obj, index) => (
-                    <div
-                      key={index}
-                      className="px-3 py-1 bg-verse-green/10 border border-verse-green/20 rounded-full text-sm"
-                    >
-                      {obj.label} ({(obj.confidence * 100).toFixed(0)}%)
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column - Generated Quests */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <Zap className="text-verse-orange" size={24} />
-            <h2 className="text-2xl font-bold text-verse-orange">Generated Quests</h2>
-          </div>
-
-          {generatedQuests.length === 0 ? (
-            <div className="bg-gray-900/50 border border-verse-orange/20 rounded-xl p-8 text-center">
-              <Zap className="text-verse-orange/50 mx-auto mb-4" size={48} />
-              <h3 className="text-lg font-bold text-verse-orange/70 mb-2">No Quests Yet</h3>
-              <p className="text-gray-400">Scan your environment to generate personalized quests!</p>
-              <p className="text-gray-500 text-sm mt-2">The AI will analyze what it sees and create perfect challenges.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {generatedQuests.map((quest) => (
-                <div
-                  key={quest.id}
-                  className="bg-gray-900/50 border border-verse-orange/20 rounded-xl p-5 hover:border-verse-orange/40 transition-all"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-verse-orange mb-1">{quest.title}</h3>
-                      <p className="text-gray-400 text-sm">{quest.description}</p>
-                    </div>
-                    <div className="text-right ml-4">
-                      {quest.timeLimit && (
-                        <div className="text-verse-cyan font-bold text-lg">{quest.timeLimit}min</div>
-                      )}
-                      <div className="text-verse-green text-sm">
-                        +{quest.rewards.find((r) => r.type === 'xp')?.value} XP
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
+                  <View style={styles.objectiveList}>
                     {quest.objectives.map((objective) => (
-                      <div key={objective.id} className="flex items-center space-x-3">
-                        <div
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                            objective.completed
-                              ? 'bg-verse-green border-verse-green'
-                              : 'border-verse-cyan/50'
-                          }`}
+                      <View key={objective.id} style={styles.objectiveRow}>
+                        <View
+                          style={[
+                            styles.objectiveIndicator,
+                            objective.completed && styles.objectiveIndicatorCompleted,
+                          ]}
                         >
-                          {objective.completed && '✓'}
-                        </div>
-                        <span
-                          className={`text-sm ${
-                            objective.completed ? 'text-gray-400 line-through' : 'text-gray-200'
-                          }`}
+                          {objective.completed && <Text style={styles.objectiveCheck}>✓</Text>}
+                        </View>
+                        <Text
+                          style={[
+                            styles.objectiveText,
+                            objective.completed && styles.objectiveTextComplete,
+                          ]}
                         >
                           {objective.description}
-                        </span>
-                      </div>
+                        </Text>
+                      </View>
                     ))}
-                  </div>
+                  </View>
 
-                  <div className="flex justify-between items-center pt-3 border-t border-gray-700">
-                    <div className="flex space-x-2">
+                  <View style={styles.questFooter}>
+                    <View style={styles.rewardChips}>
                       {quest.rewards.map((reward, index) => (
-                        <div key={index} className="text-xs px-2 py-1 bg-verse-cyan/10 rounded">
-                          {reward.type === 'xp' && '⚡'}
-                          {reward.type === 'vTokens' && '🪙'}
-                          {reward.value} {reward.type}
-                        </div>
+                        <View key={index} style={styles.rewardChip}>
+                          <Text style={styles.rewardChipText}>
+                            {reward.type === 'xp' && '⚡'}
+                            {reward.type === 'vTokens' && '🪙'}
+                            {reward.value} {reward.type}
+                          </Text>
+                        </View>
                       ))}
-                    </div>
-                    <button
-                      onClick={() => acceptQuest(quest)}
-                      className="bg-verse-orange text-verse-black px-4 py-2 rounded-lg font-bold hover:bg-verse-orange/90 transition-colors"
-                    >
-                      Accept Quest
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+                    </View>
+                    <Pressable style={styles.acceptButton} onPress={() => acceptQuest(quest)}>
+                      <Text style={styles.acceptButtonText}>Accept Quest</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 16,
+  },
+  container: {
+    flex: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  inlineIcon: {
+    marginRight: 8,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.verseCyan,
+  },
+  headerSubtitle: {
+    color: withOpacity(colors.verseCyan, 0.7),
+    fontSize: 14,
+  },
+  gridRow: {
+    flexDirection: 'column',
+  },
+  gridRowWide: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  leftColumn: {
+    flex: 1,
+    marginBottom: 24,
+  },
+  leftColumnWide: {
+    marginRight: 24,
+    marginBottom: 0,
+  },
+  rightColumn: {
+    flex: 1,
+  },
+  panel: {
+    backgroundColor: withOpacity('#0d1529', 0.9),
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: withOpacity(colors.verseCyan, 0.18),
+    marginBottom: 24,
+  },
+  panelTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.verseCyan,
+    marginBottom: 16,
+  },
+  cameraWrapper: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: withOpacity(colors.verseCyan, 0.3),
+    backgroundColor: '#000',
+    marginBottom: 16,
+    minHeight: 200,
+  },
+  cameraPreview: {
+    width: '100%',
+    height: 220,
+  },
+  cameraPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: withOpacity(colors.gray900, 0.6),
+  },
+  placeholderText: {
+    color: colors.verseOrange,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  permissionButton: {
+    backgroundColor: colors.verseOrange,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  permissionButtonText: {
+    color: colors.verseBlack,
+    fontWeight: '700',
+  },
+  cameraOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: withOpacity('#000', 0.5),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overlayText: {
+    color: colors.verseCyan,
+    fontWeight: '700',
+    marginTop: 12,
+  },
+  scanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.verseCyan,
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  scanButtonDisabled: {
+    opacity: 0.6,
+  },
+  scanButtonText: {
+    color: colors.verseBlack,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: withOpacity('#ff4d67', 0.12),
+    borderWidth: 1,
+    borderColor: withOpacity('#ff4d67', 0.3),
+  },
+  errorText: {
+    color: withOpacity('#ff4d67', 0.9),
+    fontSize: 13,
+  },
+  analysisPanel: {
+    backgroundColor: withOpacity('#111a33', 0.85),
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: withOpacity(colors.versePurple, 0.2),
+    marginTop: 24,
+  },
+  analysisTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.versePurple,
+    marginBottom: 16,
+  },
+  analysisGrid: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  analysisColumn: {
+    flex: 1,
+  },
+  analysisColumnRight: {
+    marginLeft: 16,
+  },
+  analysisItem: {
+    marginBottom: 12,
+  },
+  analysisLabel: {
+    color: withOpacity(colors.gray400, 0.9),
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  analysisValue: {
+    color: colors.verseCyan,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  objectTagsSection: {
+    marginTop: 12,
+  },
+  objectTagsTitle: {
+    color: colors.verseGreen,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  objectTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  objectTag: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: withOpacity(colors.verseGreen, 0.12),
+    borderWidth: 1,
+    borderColor: withOpacity(colors.verseGreen, 0.2),
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  objectTagText: {
+    color: colors.verseGreen,
+    fontSize: 12,
+  },
+  generatedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  generatedTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.verseOrange,
+  },
+  emptyState: {
+    backgroundColor: withOpacity('#1a1424', 0.9),
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: withOpacity(colors.verseOrange, 0.2),
+  },
+  emptyStateTitle: {
+    color: withOpacity(colors.verseOrange, 0.7),
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 12,
+  },
+  emptyStateSubtitle: {
+    color: withOpacity(colors.gray300, 0.9),
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  emptyStateHint: {
+    color: withOpacity(colors.gray400, 0.9),
+    textAlign: 'center',
+    marginTop: 6,
+    fontSize: 12,
+  },
+  questCard: {
+    backgroundColor: withOpacity('#0f172a', 0.88),
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: withOpacity(colors.verseOrange, 0.25),
+    marginBottom: 16,
+  },
+  questHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  questInfo: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  questTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.verseOrange,
+  },
+  questDescription: {
+    color: withOpacity(colors.gray300, 0.9),
+    marginTop: 6,
+    fontSize: 13,
+  },
+  questMeta: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  questTime: {
+    color: colors.verseCyan,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  questReward: {
+    color: colors.verseGreen,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  objectiveList: {
+    marginTop: 16,
+  },
+  objectiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  objectiveIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: withOpacity(colors.verseCyan, 0.4),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  objectiveIndicatorCompleted: {
+    backgroundColor: colors.verseGreen,
+    borderColor: colors.verseGreen,
+  },
+  objectiveCheck: {
+    color: colors.verseBlack,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  objectiveText: {
+    color: withOpacity('#ffffff', 0.85),
+    flex: 1,
+  },
+  objectiveTextComplete: {
+    color: withOpacity(colors.gray400, 0.9),
+    textDecorationLine: 'line-through',
+  },
+  questFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: withOpacity(colors.gray700, 0.6),
+    paddingTop: 16,
+  },
+  rewardChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  rewardChip: {
+    backgroundColor: withOpacity(colors.verseCyan, 0.12),
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  rewardChipText: {
+    color: colors.verseCyan,
+    fontSize: 12,
+  },
+  acceptButton: {
+    backgroundColor: colors.verseOrange,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  acceptButtonText: {
+    color: colors.verseBlack,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+});
