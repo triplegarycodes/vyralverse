@@ -101,7 +101,7 @@ export default function App() {
             >
               FLWX Lens
             </button>
-            // Add to your navigation
+            {/* Add to your navigation */}
             <button
               onClick={() => setActiveModule('skills')}
               className={`px-4 py-2 rounded-lg ${
