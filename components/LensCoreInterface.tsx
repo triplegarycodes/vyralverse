@@ -1,5 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Camera, Scan, Zap, AlertCircle } from 'lucide-react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { CameraView, CameraViewRef, useCameraPermissions } from 'expo-camera';
+import { Camera as CameraIcon, Scan, Zap, AlertCircle } from 'lucide-react';
 import { EnvironmentScan, Quest } from '@core/types';
 
 interface LensCoreInterfaceProps {
@@ -7,39 +8,50 @@ interface LensCoreInterfaceProps {
 }
 
 export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGenerated }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const cameraRef = useRef<CameraViewRef | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [isCameraReady, setIsCameraReady] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [hasCameraAccess, setHasCameraAccess] = useState(false);
   const [scanResult, setScanResult] = useState<EnvironmentScan | null>(null);
   const [generatedQuests, setGeneratedQuests] = useState<Quest[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const hasCameraAccess = permission?.granted ?? false;
+
+  const handlePermissionRequest = useCallback(async () => {
+    try {
+      const response = await requestPermission();
+
+      if (!response?.granted) {
+        setError('Camera access denied. Please enable camera permissions.');
+        setIsCameraReady(false);
+      }
+
+      return response;
+    } catch (permissionError) {
+      console.error('Camera permission error:', permissionError);
+      setError('Unable to request camera permissions. Please try again.');
+      return null;
+    }
+  }, [requestPermission]);
 
   useEffect(() => {
-    const initCamera = async () => {
-      try {
-        if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-          throw new Error('Camera access not supported in this environment.');
-        }
+    if (!permission) {
+      void handlePermissionRequest();
+      return;
+    }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-        });
+    if (!permission.granted) {
+      setError('Camera access denied. Please enable camera permissions.');
+      setIsCameraReady(false);
+    } else {
+      setError(null);
+    }
+  }, [permission, handlePermissionRequest]);
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setHasCameraAccess(true);
-        }
-      } catch (err) {
-        setError('Camera access denied. Please enable camera permissions.');
-        console.error('Camera error:', err);
-      }
-    };
-
-    initCamera();
-
+  useEffect(() => {
     return () => {
-      const tracks = (videoRef.current?.srcObject as MediaStream | null)?.getTracks?.();
-      tracks?.forEach((track) => track.stop());
+      const camera = cameraRef.current as unknown as { pausePreview?: () => void } | null;
+      camera?.pausePreview?.();
     };
   }, []);
 
@@ -170,7 +182,7 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center space-x-3 mb-6">
-        <Camera className="text-verse-cyan" size={32} />
+        <CameraIcon className="text-verse-cyan" size={32} />
         <div>
           <h1 className="text-3xl font-bold text-verse-cyan">FLWX Lens Core</h1>
           <p className="text-verse-cyan/70">AI-Powered Environment Scanner</p>
@@ -183,14 +195,54 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
           <div className="bg-gray-900/50 border border-verse-cyan/20 rounded-xl p-6">
             <h2 className="text-xl font-bold text-verse-cyan mb-4">Environment Scanner</h2>
 
-            <div className="relative bg-black rounded-lg overflow-hidden border-2 border-verse-cyan/30">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-64 object-cover"
-              />
+            <div className="relative h-64 bg-black rounded-lg overflow-hidden border-2 border-verse-cyan/30">
+              {hasCameraAccess ? (
+                <CameraView
+                  ref={cameraRef}
+                  style={{ width: '100%', height: '100%' }}
+                  facing="back"
+                  onCameraReady={() => {
+                    setIsCameraReady(true);
+                    setError(null);
+                  }}
+                  onMountError={(cameraError) => {
+                    console.error('Camera mount error:', cameraError);
+                    setIsCameraReady(false);
+                    setError('Unable to start camera preview.');
+                  }}
+                />
+              ) : (
+                <div className="w-full h-64 flex items-center justify-center bg-gradient-to-br from-verse-black to-verse-purple/40">
+                  <div className="text-center space-y-3">
+                    <AlertCircle className="text-verse-orange mx-auto" size={36} />
+                    <p className="text-verse-orange font-semibold">Camera access required</p>
+                    <p className="text-xs text-verse-orange/70 uppercase tracking-[0.3em]">Grant permission to activate lens</p>
+                    <button
+                      onClick={() => void handlePermissionRequest()}
+                      className="px-4 py-2 bg-verse-cyan text-verse-black rounded-lg font-semibold hover:bg-verse-cyan/90 transition-colors"
+                    >
+                      Enable Camera
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {hasCameraAccess && (
+                <div className="pointer-events-none absolute inset-0">
+                  <div className="absolute inset-0 border-2 border-verse-cyan/40 rounded-lg" />
+                  <div className="absolute inset-x-12 inset-y-8 border border-verse-cyan/20 rounded-xl" />
+                  <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-verse-black/50 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-verse-black/60 to-transparent" />
+                </div>
+              )}
+
+              {hasCameraAccess && !isCameraReady && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-verse-cyan space-y-2">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-verse-cyan"></div>
+                  <p className="font-semibold uppercase tracking-[0.3em] text-sm">Initializing Lens</p>
+                </div>
+              )}
+
               {isScanning && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                   <div className="text-center">
@@ -199,20 +251,11 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
                   </div>
                 </div>
               )}
-
-              {!hasCameraAccess && !error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <div className="text-center">
-                    <AlertCircle className="text-verse-orange mx-auto mb-2" size={32} />
-                    <p className="text-verse-orange">Camera access required</p>
-                  </div>
-                </div>
-              )}
             </div>
 
             <button
               onClick={handleScan}
-              disabled={isScanning || !hasCameraAccess}
+              disabled={isScanning || !hasCameraAccess || !isCameraReady}
               className="w-full mt-4 bg-verse-cyan text-verse-black py-3 rounded-lg font-bold hover:bg-verse-cyan/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
             >
               <Scan size={20} />
