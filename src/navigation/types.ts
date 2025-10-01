@@ -6,4 +6,5 @@ export type RootStackParamList = {
   Zone: undefined;
   Oath: undefined;
   Shop: undefined;
+  DailyOps: undefined;
 };
