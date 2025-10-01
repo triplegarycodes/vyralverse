@@ -8,6 +8,7 @@ import { BoardScreen } from '../screens/BoardScreen';
 import { ZoneScreen } from '../screens/ZoneScreen';
 import { OathScreen } from '../screens/OathScreen';
 import { ShopScreen } from '../screens/ShopScreen';
+import { DailyOpsScreen } from '../screens/DailyOpsScreen';
 import { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,6 +29,7 @@ export const AppNavigator = () => (
       <Stack.Screen name="Zone" component={ZoneScreen} />
       <Stack.Screen name="Oath" component={OathScreen} />
       <Stack.Screen name="Shop" component={ShopScreen} />
+      <Stack.Screen name="DailyOps" component={DailyOpsScreen} />
     </Stack.Navigator>
   </NavigationContainer>
 );
