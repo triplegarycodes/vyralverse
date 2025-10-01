@@ -70,55 +70,55 @@ export default function App() {
   };
 
   return (
-    <div className="app-shell">
+    <div className="app-shell fx-overlay">
       <div className="app-surface">
         <header className="app-header">
           <div className="brand-mark">
-            <span className="title">
-              VYRAL<span>VERSE</span>
-            </span>
-            <span className="tagline">Neon Flow Intelligence</span>
+            <div className="logo-glow" aria-hidden="true">
+              <span>VX</span>
+            </div>
+            <div className="brand-copy">
+              <span className="title">
+                VYRAL<span>VERSE</span>
+              </span>
+              <span className="tagline">Neon Flow Intelligence</span>
+            </div>
           </div>
 
-          <nav className="module-nav">
+          <nav className="module-nav" role="tablist" aria-label="Primary modules">
             <button
+              type="button"
               onClick={() => setActiveModule('dashboard')}
-              className={`px-4 py-2 rounded-lg ${
-                activeModule === 'dashboard'
-                  ? 'bg-verse-cyan text-verse-black'
-                  : 'bg-verse-cyan/10 text-verse-cyan'
-              }`}
+              className={`module-tab ${activeModule === 'dashboard' ? 'is-active' : ''}`}
+              aria-selected={activeModule === 'dashboard'}
             >
-              Dashboard
+              <span>LyfeBoard</span>
             </button>
             <button
+              type="button"
               onClick={() => setActiveModule('lens')}
-              className={`px-4 py-2 rounded-lg ${
-                activeModule === 'lens'
-                  ? 'bg-verse-orange text-verse-black'
-                  : 'bg-verse-orange/20 text-verse-orange'
-              }`}
+              className={`module-tab module-tab--amber ${activeModule === 'lens' ? 'is-active' : ''}`}
+              aria-selected={activeModule === 'lens'}
             >
-              FLWX Lens
+              <span>FLWX Lens</span>
             </button>
-            {/* Add to your navigation */}
             <button
+              type="button"
               onClick={() => setActiveModule('skills')}
-              className={`px-4 py-2 rounded-lg ${
-                activeModule === 'skills'
-                  ? 'bg-verse-purple text-verse-black'
-                  : 'bg-verse-purple/10 text-verse-purple'
-              }`}
+              className={`module-tab module-tab--violet ${activeModule === 'skills' ? 'is-active' : ''}`}
+              aria-selected={activeModule === 'skills'}
             >
-              Vyra- Skills
+              <span>Vyra-Skills</span>
             </button>
           </nav>
 
           <div className="status-chip">
-            <div className="avatar">⚡</div>
+            <div className="avatar" aria-hidden="true">
+              <Sparkles size={20} />
+            </div>
             <div className="details">
               <span className="name">{user.name}</span>
-              <span className="level">Level {level} // {xpToNext} XP to ascend</span>
+              <span className="level">Level {level} • {xpToNext} XP to ascend</span>
             </div>
           </div>
         </header>
@@ -162,9 +162,10 @@ export default function App() {
 
                 <section className="panel">
                   <div className="panel-header">
-                    <h2>
-                      <Zap size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} /> Active Quest Stream
-                    </h2>
+                    <div className="panel-title">
+                      <Zap size={18} />
+                      <h2>Active Quest Stream</h2>
+                    </div>
                     <span>Synced from FLWX Lens</span>
                   </div>
                   {inProgressQuests.length === 0 ? (
@@ -175,50 +176,44 @@ export default function App() {
                   ) : (
                     <ul className="list-stack">
                       {inProgressQuests.map((quest) => (
-                        <li key={quest.id} className="list-card">
-                          <strong>{quest.title}</strong>
-                          <span>{quest.description}</span>
-                          <div className="info-grid mt-3">
-                            <div>
-                              <span className="text-verse-cyan text-xs uppercase">Objectives</span>
-                              <div className="space-y-2 mt-2">
+                        <li key={quest.id} className="list-card quest-card">
+                          <div className="quest-body">
+                            <strong>{quest.title}</strong>
+                            <p>{quest.description}</p>
+                          </div>
+                          <div className="info-grid">
+                            <div className="info-block">
+                              <span className="info-label info-label--cyan">Objectives</span>
+                              <ul className="objective-list">
                                 {quest.objectives.map((objective) => (
-                                  <div key={objective.id} className="flex items-center space-x-2">
-                                    <div
-                                      className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                        objective.completed
-                                          ? 'bg-verse-green border-verse-green'
-                                          : 'border-verse-cyan/50'
-                                      }`}
-                                    >
-                                      {objective.completed && '✓'}
-                                    </div>
-                                    <span className="text-gray-200 text-sm">{objective.description}</span>
-                                  </div>
+                                  <li key={objective.id} className={`objective-item ${objective.completed ? 'is-complete' : ''}`}>
+                                    <span className="objective-check" aria-hidden="true">
+                                      {objective.completed ? '✓' : ''}
+                                    </span>
+                                    <span className="objective-text">{objective.description}</span>
+                                  </li>
                                 ))}
-                              </div>
+                              </ul>
                             </div>
-                            <div>
-                              <span className="text-verse-orange text-xs uppercase">Rewards</span>
-                              <div className="space-y-2 mt-2">
+                            <div className="info-block">
+                              <span className="info-label info-label--amber">Rewards</span>
+                              <ul className="reward-list">
                                 {quest.rewards.map((reward, index) => (
-                                  <div key={index} className="text-sm text-gray-300">
-                                    {reward.type === 'xp' && '⚡ '}
-                                    {reward.type === 'vTokens' && '🪙 '}
-                                    {reward.value} {reward.type}
-                                  </div>
+                                  <li key={index} className="reward-item">
+                                    <span aria-hidden="true">{reward.type === 'xp' ? '⚡' : '🪙'}</span>
+                                    <span>
+                                      {reward.value} {reward.type}
+                                    </span>
+                                  </li>
                                 ))}
-                              </div>
+                              </ul>
                             </div>
                           </div>
-                          <div className="flex justify-between items-center mt-4">
+                          <div className="quest-footer">
                             <span className="quest-chip">
                               <Target size={16} /> {quest.difficulty} star intensity
                             </span>
-                            <button
-                              onClick={() => completeQuest(quest.id)}
-                              className="px-4 py-2 rounded-lg bg-verse-orange text-verse-black font-bold hover:bg-verse-orange/90 transition-colors"
-                            >
+                            <button type="button" onClick={() => completeQuest(quest.id)} className="neo-button neo-button--amber">
                               Complete Quest
                             </button>
                           </div>
@@ -232,9 +227,10 @@ export default function App() {
               <div className="dashboard-column">
                 <section className="panel">
                   <div className="panel-header">
-                    <h2>
-                      <Radio size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} /> Signal Highlights
-                    </h2>
+                    <div className="panel-title">
+                      <Radio size={18} />
+                      <h2>Signal Highlights</h2>
+                    </div>
                     <span>Latest Verse echoes</span>
                   </div>
                   <div className="stat-grid">
@@ -259,29 +255,30 @@ export default function App() {
 
                 <section className="panel">
                   <div className="panel-header">
-                    <h2>
-                      <Compass size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} /> Creative Timeline
-                    </h2>
+                    <div className="panel-title">
+                      <Compass size={18} />
+                      <h2>Creative Timeline</h2>
+                    </div>
                     <span>Newest artifacts</span>
                   </div>
                   <ul className="list-stack">
                     {recentProjects.map((project) => (
                       <li key={project.id} className="list-card">
                         <strong>{project.title}</strong>
-                        <span>{project.description || 'No mission brief yet—spark it soon.'}</span>
-                        <span className="text-verse-cyan text-xs">{formatTimeAgo(project.createdAt)}</span>
+                        <p>{project.description || 'No mission brief yet—spark it soon.'}</p>
+                        <span className="meta meta--cyan">{formatTimeAgo(project.createdAt)}</span>
                       </li>
                     ))}
                     {recentSeeds.map((seed) => (
                       <li key={seed.id} className="list-card">
                         <strong>Seed • {seed.label}</strong>
-                        <span className="text-verse-purple text-sm">Idea planted {formatTimeAgo(seed.createdAt)}</span>
+                        <span className="meta meta--violet">Idea planted {formatTimeAgo(seed.createdAt)}</span>
                       </li>
                     ))}
                     {recentLessons.map((lesson) => (
                       <li key={lesson.id} className="list-card">
                         <strong>Lesson • {lesson.title}</strong>
-                        <span className="text-verse-green text-sm">+{lesson.xp} XP — {formatTimeAgo(lesson.completedAt)}</span>
+                        <span className="meta meta--green">+{lesson.xp} XP — {formatTimeAgo(lesson.completedAt)}</span>
                       </li>
                     ))}
                     {recentProjects.length === 0 && recentSeeds.length === 0 && recentLessons.length === 0 && (

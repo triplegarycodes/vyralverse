@@ -1,8 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Camera, Scan, Zap, AlertCircle } from 'lucide-react-native';
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CameraView, CameraViewRef, useCameraPermissions } from 'expo-camera';
-import { Camera as CameraIcon, Scan, Zap, AlertCircle } from 'lucide-react';
+import { Camera, Scan, Zap, AlertCircle, Sparkles } from 'lucide-react-native';
 import { EnvironmentScan, Quest } from '@core/types';
 
 interface LensCoreInterfaceProps {
@@ -17,17 +15,16 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
   const [scanResult, setScanResult] = useState<EnvironmentScan | null>(null);
   const [generatedQuests, setGeneratedQuests] = useState<Quest[]>([]);
   const [error, setError] = useState<string | null>(null);
+
   const hasCameraAccess = permission?.granted ?? false;
 
   const handlePermissionRequest = useCallback(async () => {
     try {
       const response = await requestPermission();
-
       if (!response?.granted) {
-        setError('Camera access denied. Please enable camera permissions.');
+        setError('Camera access denied. Enable permissions to activate the lens.');
         setIsCameraReady(false);
       }
-
       return response;
     } catch (permissionError) {
       console.error('Camera permission error:', permissionError);
@@ -43,12 +40,17 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
     }
 
     if (!permission.granted) {
-      setError('Camera access denied. Please enable camera permissions.');
+      setError('Camera access denied. Enable permissions to activate the lens.');
       setIsCameraReady(false);
     } else {
       setError(null);
     }
   }, [permission, handlePermissionRequest]);
+
+  const handleCameraReady = useCallback(() => {
+    setIsCameraReady(true);
+    setError(null);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -80,31 +82,6 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
     };
   };
 
-  const handleScan = async () => {
-    if (!hasCameraAccess) {
-      setError('No camera access. Please enable permissions and try again.');
-      return;
-    }
-
-    setIsScanning(true);
-    setError(null);
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const result = simulateObjectDetection();
-      setScanResult(result);
-
-      const quests = generateQuestsFromEnvironment(result);
-      setGeneratedQuests(quests);
-    } catch (err) {
-      setError('Scan failed. Please try again.');
-      console.error(err);
-    } finally {
-      setIsScanning(false);
-    }
-  };
-
   const generateQuestsFromEnvironment = (scan: EnvironmentScan): Quest[] => {
     const quests: Quest[] = [];
     const baseId = `quest_${Date.now()}`;
@@ -113,7 +90,7 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
       quests.push({
         id: `${baseId}_study`,
         title: '📚 Study Session Quest',
-        description: 'Master your current subject with focused practice',
+        description: 'Master your current subject with focused practice.',
         type: 'learning',
         difficulty: 3,
         objectives: [
@@ -145,7 +122,7 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
     quests.push({
       id: `${baseId}_focus`,
       title: '🎯 Deep Focus Challenge',
-      description: 'Eliminate distractions and enter flow state',
+      description: 'Eliminate distractions and enter flow state.',
       type: 'focus',
       difficulty: 2,
       objectives: [
@@ -158,7 +135,7 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
         },
         {
           id: 'obj_2',
-          description: 'Work without breaks for 30min',
+          description: 'Work without breaks for 30 minutes',
           type: 'action',
           quantity: 1,
           completed: false,
@@ -176,243 +153,172 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
     return quests;
   };
 
+  const handleScan = async () => {
+    if (!hasCameraAccess) {
+      setError('No camera access. Please enable permissions and try again.');
+      return;
+    }
+
+    setIsScanning(true);
+    setError(null);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1800));
+
+      const result = simulateObjectDetection();
+      setScanResult(result);
+
+      const quests = generateQuestsFromEnvironment(result);
+      setGeneratedQuests(quests);
+    } catch (err) {
+      setError('Scan failed. Please try again.');
+      console.error(err);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const acceptQuest = (quest: Quest) => {
     onQuestGenerated(quest);
     setGeneratedQuests((prev) => prev.filter((q) => q.id !== quest.id));
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center space-x-3 mb-6">
-        <CameraIcon className="text-verse-cyan" size={32} />
-        <div>
-          <h1 className="text-3xl font-bold text-verse-cyan">FLWX Lens Core</h1>
-          <p className="text-verse-cyan/70">AI-Powered Environment Scanner</p>
+    <div className="lens-interface">
+      <header className="panel-header lens-header">
+        <div className="panel-title">
+          <Camera size={20} />
+          <h2>FLWX Lens Core</h2>
         </div>
-      </div>
+        <p>AI-powered environment scanner for adaptive quests.</p>
+      </header>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Left Column - Camera & Controls */}
-        <div className="space-y-6">
-          <div className="bg-gray-900/50 border border-verse-cyan/20 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-verse-cyan mb-4">Environment Scanner</h2>
-
-            <div className="relative h-64 bg-black rounded-lg overflow-hidden border-2 border-verse-cyan/30">
-              {hasCameraAccess ? (
-                <CameraView
-                  ref={cameraRef}
-                  style={{ width: '100%', height: '100%' }}
-                  facing="back"
-                  onCameraReady={() => {
-                    setIsCameraReady(true);
-                    setError(null);
-                  }}
-                  onMountError={(cameraError) => {
-                    console.error('Camera mount error:', cameraError);
-                    setIsCameraReady(false);
-                    setError('Unable to start camera preview.');
-                  }}
-                />
-              ) : (
-                <div className="w-full h-64 flex items-center justify-center bg-gradient-to-br from-verse-black to-verse-purple/40">
-                  <div className="text-center space-y-3">
-                    <AlertCircle className="text-verse-orange mx-auto" size={36} />
-                    <p className="text-verse-orange font-semibold">Camera access required</p>
-                    <p className="text-xs text-verse-orange/70 uppercase tracking-[0.3em]">Grant permission to activate lens</p>
-                    <button
-                      onClick={() => void handlePermissionRequest()}
-                      className="px-4 py-2 bg-verse-cyan text-verse-black rounded-lg font-semibold hover:bg-verse-cyan/90 transition-colors"
-                    >
-                      Enable Camera
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {hasCameraAccess && (
-                <div className="pointer-events-none absolute inset-0">
-                  <div className="absolute inset-0 border-2 border-verse-cyan/40 rounded-lg" />
-                  <div className="absolute inset-x-12 inset-y-8 border border-verse-cyan/20 rounded-xl" />
-                  <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-verse-black/50 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-verse-black/60 to-transparent" />
-                </div>
-              )}
-
-              {hasCameraAccess && !isCameraReady && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-verse-cyan space-y-2">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-verse-cyan"></div>
-                  <p className="font-semibold uppercase tracking-[0.3em] text-sm">Initializing Lens</p>
-                </div>
-              )}
-
-              {isScanning && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-verse-cyan mx-auto mb-4"></div>
-                    <p className="text-verse-cyan font-bold">Analyzing Environment...</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={handleScan}
-              disabled={isScanning || !hasCameraAccess || !isCameraReady}
-              className="w-full mt-4 bg-verse-cyan text-verse-black py-3 rounded-lg font-bold hover:bg-verse-cyan/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
-            >
-              <Scan size={20} />
-              <span>{isScanning ? 'Scanning...' : 'Scan Environment'}</span>
-            </button>
-
-            {error && (
-              <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <div className="flex items-center space-x-2 text-red-400">
-                  <AlertCircle size={20} />
-                  <span>{error}</span>
-                </div>
+      <div className="lens-grid">
+        <section className="lens-stage-card">
+          <div className="lens-stage">
+            {hasCameraAccess ? (
+              <CameraView
+                ref={cameraRef}
+                style={{ flex: 1 }}
+                onCameraReady={handleCameraReady}
+              />
+            ) : (
+              <div className="camera-placeholder">
+                <Camera size={36} />
+                <p>Enable camera access to activate the lens.</p>
+              </div>
+            )}
+            {isScanning && (
+              <div className="scan-overlay" aria-live="polite">
+                <div className="scan-ring" />
+                <span className="scan-status">
+                  <Scan size={18} /> Scanning environment…
+                </span>
               </div>
             )}
           </div>
 
-          {/* Scan Results */}
+          <div className="lens-actions">
+            <button
+              type="button"
+              className="neo-button neo-button--ghost"
+              onClick={handlePermissionRequest}
+            >
+              <Camera size={16} /> Request Access
+            </button>
+            <button
+              type="button"
+              className="neo-button neo-button--cyan"
+              onClick={handleScan}
+              disabled={!isCameraReady || isScanning || !hasCameraAccess}
+            >
+              <Scan size={16} /> {isScanning ? 'Scanning…' : 'Start Scan'}
+            </button>
+          </div>
+
+          {error && (
+            <div className="status-note status-note--error">
+              <AlertCircle size={16} /> {error}
+            </div>
+          )}
+
+          {!error && scanResult && (
+            <div className="status-note status-note--success">
+              <Sparkles size={16} /> Flow signature captured • {scanResult.activity}
+            </div>
+          )}
+
           {scanResult && (
-            <div className="bg-gray-900/50 border border-verse-purple/20 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-verse-purple mb-4">Environment Analysis</h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm text-gray-400">Activity</label>
-                    <div className="text-verse-cyan font-medium capitalize">{scanResult.activity}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">Mood</label>
-                    <div className="text-verse-cyan font-medium capitalize">{scanResult.mood}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">Focus Level</label>
-                    <div className="text-verse-cyan font-medium">
-                      {(scanResult.userState.focusLevel * 100).toFixed(0)}%
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm text-gray-400">Location</label>
-                    <div className="text-verse-cyan font-medium capitalize">{scanResult.location}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">People</label>
-                    <div className="text-verse-cyan font-medium">{scanResult.people}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">Energy</label>
-                    <div className="text-verse-cyan font-medium">
-                      {(scanResult.userState.energyEstimate * 100).toFixed(0)}%
-                    </div>
-                  </div>
-                </div>
+            <div className="scan-matrix">
+              <div>
+                <span className="scan-label">Focus Level</span>
+                <span className="scan-value">{Math.round(scanResult.userState.focusLevel * 100)}%</span>
               </div>
-
-              <div className="mt-6">
-                <h4 className="font-bold text-verse-green mb-3">Detected Objects</h4>
-                <div className="flex flex-wrap gap-2">
-                  {scanResult.objects.map((obj, index) => (
-                    <div
-                      key={index}
-                      className="px-3 py-1 bg-verse-green/10 border border-verse-green/20 rounded-full text-sm"
-                    >
-                      {obj.label} ({(obj.confidence * 100).toFixed(0)}%)
-                    </div>
+              <div>
+                <span className="scan-label">Energy</span>
+                <span className="scan-value">{Math.round(scanResult.userState.energyEstimate * 100)}%</span>
+              </div>
+              <div>
+                <span className="scan-label">Stress</span>
+                <span className="scan-value">{Math.round(scanResult.userState.stressIndicators * 100)}%</span>
+              </div>
+              <div>
+                <span className="scan-label">Detected Objects</span>
+                <div className="scan-tags">
+                  {scanResult.objects.map((object) => (
+                    <span key={object.label} className="scan-pill">
+                      {object.label}
+                    </span>
                   ))}
                 </div>
               </div>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Right Column - Generated Quests */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <Zap className="text-verse-orange" size={24} />
-            <h2 className="text-2xl font-bold text-verse-orange">Generated Quests</h2>
+        <section className="panel lens-quests">
+          <div className="panel-header">
+            <div className="panel-title">
+              <Zap size={18} />
+              <h3>Quest Recommendations</h3>
+            </div>
+            <span>Adaptive mission feed</span>
           </div>
 
           {generatedQuests.length === 0 ? (
-            <div className="bg-gray-900/50 border border-verse-orange/20 rounded-xl p-8 text-center">
-              <Zap className="text-verse-orange/50 mx-auto mb-4" size={48} />
-              <h3 className="text-lg font-bold text-verse-orange/70 mb-2">No Quests Yet</h3>
-              <p className="text-gray-400">Scan your environment to generate personalized quests!</p>
-              <p className="text-gray-500 text-sm mt-2">The AI will analyze what it sees and create perfect challenges.</p>
+            <div className="highlight-card">
+              <h3>No quests generated yet</h3>
+              <p>Run a scan to synthesize fresh quests from your current environment.</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="quest-grid">
               {generatedQuests.map((quest) => (
-                <div
-                  key={quest.id}
-                  className="bg-gray-900/50 border border-verse-orange/20 rounded-xl p-5 hover:border-verse-orange/40 transition-all"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-verse-orange mb-1">{quest.title}</h3>
-                      <p className="text-gray-400 text-sm">{quest.description}</p>
-                    </div>
-                    <div className="text-right ml-4">
-                      {quest.timeLimit && (
-                        <div className="text-verse-cyan font-bold text-lg">{quest.timeLimit}min</div>
-                      )}
-                      <div className="text-verse-green text-sm">
-                        +{quest.rewards.find((r) => r.type === 'xp')?.value} XP
+                <article key={quest.id} className="quest-preview">
+                  <div className="quest-preview-header">
+                    <strong>{quest.title}</strong>
+                    <span className="quest-difficulty">Intensity {quest.difficulty}/5</span>
+                  </div>
+                  <p>{quest.description}</p>
+                  <div className="quest-preview-meta">
+                    <div className="reward-line">
+                      <span>Rewards</span>
+                      <div>
+                        {quest.rewards.map((reward, index) => (
+                          <span key={index} className="reward-token">
+                            {reward.type === 'xp' ? '⚡' : '🪙'} {reward.value} {reward.type}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    {quest.objectives.map((objective) => (
-                      <div key={objective.id} className="flex items-center space-x-3">
-                        <div
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                            objective.completed
-                              ? 'bg-verse-green border-verse-green'
-                              : 'border-verse-cyan/50'
-                          }`}
-                        >
-                          {objective.completed && '✓'}
-                        </div>
-                        <span
-                          className={`text-sm ${
-                            objective.completed ? 'text-gray-400 line-through' : 'text-gray-200'
-                          }`}
-                        >
-                          {objective.description}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-between items-center pt-3 border-t border-gray-700">
-                    <div className="flex space-x-2">
-                      {quest.rewards.map((reward, index) => (
-                        <div key={index} className="text-xs px-2 py-1 bg-verse-cyan/10 rounded">
-                          {reward.type === 'xp' && '⚡'}
-                          {reward.type === 'vTokens' && '🪙'}
-                          {reward.value} {reward.type}
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => acceptQuest(quest)}
-                      className="bg-verse-orange text-verse-black px-4 py-2 rounded-lg font-bold hover:bg-verse-orange/90 transition-colors"
-                    >
+                    <button type="button" className="neo-button neo-button--violet" onClick={() => acceptQuest(quest)}>
                       Accept Quest
                     </button>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );
