@@ -1,0 +1,3 @@
+git add package-lock.json   # or yarn.lock, depending on your package manager
+git commit -m "Add lock file for dependencies"
+git push
