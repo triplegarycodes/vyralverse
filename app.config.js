@@ -1,4 +1,7 @@
-require('dotenv/config');
+const { config } = require('dotenv');
+
+// Load environment variables from a local .env file when available.
+config();
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? '';
 const PUBLIC_OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '';

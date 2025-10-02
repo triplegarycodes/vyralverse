@@ -53,8 +53,8 @@ export const LensCoreInterface: React.FC<LensCoreInterfaceProps> = ({ onQuestGen
   }, []);
 
   useEffect(() => {
+    const camera = cameraRef.current as unknown as { pausePreview?: () => void } | null;
     return () => {
-      const camera = cameraRef.current as unknown as { pausePreview?: () => void } | null;
       camera?.pausePreview?.();
     };
   }, []);
