@@ -26,11 +26,15 @@ if (__DEV__) {
   }
 }
 
-const Root = () => (
-  <GestureHandlerRootView style={{ flex: 1 }}>
-    <App />
-  </GestureHandlerRootView>
-);
+const rootViewStyle = Object.freeze({ flex: 1 });
+
+function Root() {
+  return React.createElement(
+    GestureHandlerRootView,
+    { style: rootViewStyle },
+    React.createElement(App)
+  );
+}
 
 registerRootComponent(Root);
 
