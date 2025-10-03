@@ -6,8 +6,83 @@ import { VyraSkillTree } from './components/VyraSkillTree';
 import { LensCoreInterface } from './components/LensCoreInterface';
 import { useVerseStore } from './src/hooks/useVerseStore';
 import type { Quest } from '@core/types';
+import StrykeIcon from './assets/modules/stryke.svg';
+import KorIcon from './assets/modules/kor.svg';
+import ZoneIcon from './assets/modules/zone.svg';
+import SkrybeIcon from './assets/modules/skrybe.svg';
+import LyfeIcon from './assets/modules/lyfe.svg';
+import TreeIcon from './assets/modules/tree.svg';
+import BoardIcon from './assets/modules/board.svg';
+import ShopIcon from './assets/modules/shop.svg';
 
 const XP_PER_LEVEL = 500;
+
+type ModuleCard = {
+  id: string;
+  name: string;
+  description: string;
+  cta: string;
+  icon: string;
+};
+
+const moduleLineup: ModuleCard[] = [
+  {
+    id: 'stryke',
+    name: 'Stryke',
+    description: 'Deploy lightning-fast focus rituals and micro challenges when the grind demands instant energy.',
+    cta: 'Launch Stryke',
+    icon: StrykeIcon,
+  },
+  {
+    id: 'kor',
+    name: 'Kor',
+    description: 'Anchor your mission blueprint, calibrate core values, and lock the squad ethos for the cycle.',
+    cta: 'Enter Kor',
+    icon: KorIcon,
+  },
+  {
+    id: 'zone',
+    name: 'Zone',
+    description: 'Broadcast transmissions, amplify crew hype, and monitor the $Lyfe economy pulses in real time.',
+    cta: 'Open Zone',
+    icon: ZoneIcon,
+  },
+  {
+    id: 'skrybe',
+    name: 'Skrybe',
+    description: 'Summon questlines, devotionals, and narrative echoes from the AI scribe to fuel the storyline.',
+    cta: 'Invoke Skrybe',
+    icon: SkrybeIcon,
+  },
+  {
+    id: 'lyfe',
+    name: 'Lyfe',
+    description: 'Track momentum metrics, XP surges, and orbit-wide vitality to steer your next move.',
+    cta: 'View Lyfe',
+    icon: LyfeIcon,
+  },
+  {
+    id: 'tree',
+    name: 'Tree',
+    description: 'Grow your multi-branch skill canopy, visualize routes, and queue the next unlock.',
+    cta: 'Grow Tree',
+    icon: TreeIcon,
+  },
+  {
+    id: 'board',
+    name: 'Board',
+    description: 'Map goals, align quests, and orchestrate cosmic sprints across your mission board.',
+    cta: 'Chart Board',
+    icon: BoardIcon,
+  },
+  {
+    id: 'shop',
+    name: 'Shop',
+    description: 'Trade neon currency for skins, boosters, and Verse upgrades to mod your run.',
+    cta: 'Visit Shop',
+    icon: ShopIcon,
+  },
+];
 
 const formatTimeAgo = (timestamp: number) => {
   const diff = Date.now() - timestamp;
@@ -157,6 +232,33 @@ export default function App() {
                       <span className="value">{store.seeds.length}</span>
                       <span className="subtext">Ideas planted in the grove</span>
                     </div>
+                  </div>
+                </section>
+
+                <section className="panel module-access" aria-labelledby="module-access-title">
+                  <div className="panel-header">
+                    <div className="panel-title">
+                      <img src={moduleLineup[0]?.icon} alt="" aria-hidden="true" />
+                      <h2 id="module-access-title">Verse Modules</h2>
+                    </div>
+                    <span>Core systems at your command</span>
+                  </div>
+                  <div className="module-grid" role="list">
+                    {moduleLineup.map((module) => (
+                      <article
+                        key={module.id}
+                        className="module-card"
+                        role="listitem"
+                        aria-label={`${module.name} module card`}
+                      >
+                        <div className="module-card__icon">
+                          <img src={module.icon} alt={`${module.name} emblem`} loading="lazy" />
+                        </div>
+                        <h3>{module.name}</h3>
+                        <p>{module.description}</p>
+                        <span className="module-card__cta">{module.cta}</span>
+                      </article>
+                    ))}
                   </div>
                 </section>
 

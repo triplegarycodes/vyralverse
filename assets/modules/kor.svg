@@ -1,0 +1,23 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="kor-bg" x1="48" y1="40" x2="208" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#101D30" />
+      <stop offset="1" stop-color="#04070E" />
+    </linearGradient>
+    <linearGradient id="kor-tri" x1="92" y1="72" x2="180" y2="196" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#63F1FF" />
+      <stop offset="1" stop-color="#2A7DFF" />
+    </linearGradient>
+    <filter id="kor-glow" x="44" y="36" width="168" height="196" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="20" y="20" width="216" height="216" rx="56" fill="url(#kor-bg)" />
+  <path filter="url(#kor-glow)" fill="none" stroke="url(#kor-tri)" stroke-width="18" stroke-linejoin="round"
+    d="M128 64L188 192H68L128 64Z" />
+  <path opacity="0.3" stroke="#6CEBFF" stroke-width="6" stroke-linecap="round" d="M128 98L158 160H98L128 98Z" />
+</svg>

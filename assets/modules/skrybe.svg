@@ -1,0 +1,25 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skrybe-bg" x1="52" y1="44" x2="200" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#101D31" />
+      <stop offset="1" stop-color="#03060D" />
+    </linearGradient>
+    <linearGradient id="skrybe-feather" x1="92" y1="60" x2="180" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6CF4FF" />
+      <stop offset="1" stop-color="#2A7EFF" />
+    </linearGradient>
+    <filter id="skrybe-glow" x="44" y="36" width="168" height="196" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="20" y="20" width="216" height="216" rx="56" fill="url(#skrybe-bg)" />
+  <g filter="url(#skrybe-glow)" fill="url(#skrybe-feather)">
+    <path d="M96 172c24-64 80-120 104-120 4 0 8 0.5 10 2 3 3 3 7-1 12-24 28-60 60-100 82-6 4-9 8-13 24-1 6-3 10-8 15-7 6-17 9-24 8 0 0 6-16 32-23z" />
+    <path d="M96 172c18-18 42-30 70-34" opacity="0.6" />
+  </g>
+  <path d="M84 188c10 0 18 8 18 18" stroke="#6CF4FF" stroke-width="6" stroke-linecap="round" />
+</svg>
